@@ -1,5 +1,8 @@
+import { useRef } from 'react'
+import type { MouseEvent } from 'react'
 import { BUSINESS } from '../config'
 import { formatPrice } from '../utils/format'
+import { EASE_OUT, prefersReducedMotion } from '../utils/motion'
 import { Icon } from './Icon'
 
 const FAQS = [
@@ -29,23 +32,71 @@ const FAQS = [
   },
 ]
 
+/** <details> com abertura e fechamento animados (altura e seta), em vez de aparecer de uma vez. */
+function FaqItem({ q, a }: { q: string; a: string }) {
+  const ref = useRef<HTMLDetailsElement>(null)
+  const animation = useRef<Animation | null>(null)
+
+  const toggle = (event: MouseEvent<HTMLElement>) => {
+    event.preventDefault()
+    const el = ref.current
+    if (!el) return
+
+    const opening = !el.open
+    el.dataset.expanded = String(opening)
+
+    if (prefersReducedMotion()) {
+      el.open = opening
+      return
+    }
+
+    animation.current?.cancel()
+    const startHeight = el.offsetHeight
+    el.style.overflow = 'hidden'
+    if (opening) el.open = true
+    const summary = el.firstElementChild as HTMLElement
+    const endHeight = opening ? el.offsetHeight : summary.offsetHeight + (el.offsetHeight - el.clientHeight)
+
+    const run = el.animate([{ height: `${startHeight}px` }, { height: `${endHeight}px` }], {
+      duration: 420,
+      easing: EASE_OUT,
+    })
+    animation.current = run
+
+    const done = () => {
+      if (animation.current !== run) return
+      animation.current = null
+      el.open = opening
+      el.style.overflow = ''
+    }
+    run.onfinish = done
+    run.oncancel = () => {
+      if (animation.current === run) animation.current = null
+    }
+  }
+
+  return (
+    <details ref={ref} className="faq__item" data-expanded="false">
+      <summary onClick={toggle}>
+        {q}
+        <Icon name="down" size={20} className="faq__chevron" />
+      </summary>
+      <p>{a}</p>
+    </details>
+  )
+}
+
 export function Faq() {
   return (
     <section className="section" id="duvidas" aria-labelledby="duvidas-title">
       <div className="container container--narrow">
-        <div className="section__head">
+        <div className="section__head" data-reveal>
           <h2 id="duvidas-title">Dúvidas frequentes</h2>
         </div>
 
-        <div className="faq">
+        <div className="faq" data-reveal>
           {FAQS.map((item) => (
-            <details key={item.q} className="faq__item">
-              <summary>
-                {item.q}
-                <Icon name="down" size={20} className="faq__chevron" />
-              </summary>
-              <p>{item.a}</p>
-            </details>
+            <FaqItem key={item.q} q={item.q} a={item.a} />
           ))}
         </div>
       </div>

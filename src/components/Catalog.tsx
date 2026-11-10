@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useUI } from '../context/UIContext'
 import { CATEGORIES, PRODUCTS, TAG_LABELS, minPrice } from '../data/products'
 import type { Category, Tag } from '../types'
+import { useFlip } from '../hooks/useFlip'
 import { normalize } from '../utils/text'
 import { Icon } from './Icon'
 import { ProductCard } from './ProductCard'
@@ -32,6 +33,9 @@ export function Catalog() {
     return list
   }, [category, query, tags, sort])
 
+  const gridRef = useRef<HTMLDivElement>(null)
+  useFlip(gridRef, filtered.map((product) => product.id).join('|'))
+
   const toggleTag = (tag: Tag) =>
     setTags((current) => (current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag]))
 
@@ -50,7 +54,7 @@ export function Catalog() {
   return (
     <section className="section" id="cardapio" aria-labelledby="cardapio-title">
       <div className="container">
-        <div className="section__head">
+        <div className="section__head" data-reveal>
           <h2 id="cardapio-title">Cardápio</h2>
           <p>Escolha o tamanho, toque em Adicionar e finalize pelo chat. O pedido fica guardado aqui no seu aparelho.</p>
         </div>
@@ -123,9 +127,11 @@ export function Catalog() {
         </p>
 
         {filtered.length > 0 ? (
-          <div className="grid">
+          <div className="grid" ref={gridRef}>
             {filtered.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <div className="grid__item" key={product.id} data-flip-id={product.id}>
+                <ProductCard product={product} />
+              </div>
             ))}
           </div>
         ) : (
@@ -138,7 +144,7 @@ export function Catalog() {
           </div>
         )}
 
-        <div className="catalog__cta">
+        <div className="catalog__cta" data-reveal>
           <p>Não achou o que queria? A Help encontra pra você.</p>
           <button type="button" className="btn btn--dark" onClick={() => openChat()}>
             <Icon name="chat" size={18} />

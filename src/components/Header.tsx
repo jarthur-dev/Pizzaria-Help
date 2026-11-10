@@ -60,7 +60,7 @@ export function Header() {
             aria-label={count > 0 ? `Abrir pedido, ${count} ${count === 1 ? 'item' : 'itens'}` : 'Abrir pedido'}
           >
             <Icon name="cart" />
-            {count > 0 && <span className="badge">{count}</span>}
+            {count > 0 && <span key={count} className="badge">{count}</span>}
           </button>
 
           <button type="button" className="btn btn--primary btn--sm header__cta" onClick={() => openChat()}>

@@ -9,9 +9,14 @@ import { Header } from './components/Header'
 import { Hero } from './components/Hero'
 import { HowItWorks } from './components/HowItWorks'
 import { CartProvider } from './context/CartContext'
+import { useScrollReveal } from './hooks/useScrollReveal'
+import { useSmoothAnchors } from './hooks/useSmoothAnchors'
 import { UIProvider } from './context/UIContext'
 
 export default function App() {
+  useScrollReveal()
+  useSmoothAnchors()
+
   return (
     <UIProvider>
       <CartProvider>

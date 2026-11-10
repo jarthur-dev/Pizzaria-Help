@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { KeyboardEvent } from 'react'
+import type { KeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent } from 'react'
 import { PRODUCTS } from '../data/products'
+import { animateValue, easeInOutCubic, prefersReducedMotion } from '../utils/motion'
 import { Icon } from './Icon'
 import { ProductCard } from './ProductCard'
 
@@ -17,6 +18,8 @@ export function FeaturedCarousel() {
   const [maxIndex, setMaxIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const trackRef = useRef<HTMLDivElement>(null)
+  const cancelRef = useRef<(() => void) | null>(null)
+  const drag = useRef({ active: false, moved: false, startX: 0, startLeft: 0, lastX: 0, lastT: 0, velocity: 0 })
 
   const items = useMemo(() => PRODUCTS.filter((product) => product.highlight === period), [period])
   const ribbon = PERIODS.find((p) => p.id === period)?.ribbon ?? ''
@@ -30,6 +33,13 @@ export function FeaturedCarousel() {
     return first.offsetWidth + (Number.isFinite(gap) ? gap : 20)
   }, [])
 
+  /** Interrompe um deslize em andamento e devolve o encaixe (snap) ao navegador. */
+  const stop = useCallback(() => {
+    cancelRef.current?.()
+    cancelRef.current = null
+    trackRef.current?.classList.remove('is-moving')
+  }, [])
+
   const measure = useCallback(() => {
     const track = trackRef.current
     const size = stepSize()
@@ -39,18 +49,51 @@ export function FeaturedCarousel() {
   }, [stepSize])
 
   useEffect(() => {
+    stop()
     const track = trackRef.current
     if (track) track.scrollLeft = 0
     measure()
     window.addEventListener('resize', measure)
     return () => window.removeEventListener('resize', measure)
-  }, [period, measure])
+  }, [period, measure, stop])
+
+  /**
+   * Desliza até a posição `x` com easing. Durante o movimento o `scroll-snap` é desligado
+   * (classe is-moving); com ele ligado o navegador "puxava" cada quadro e o carrossel pulava.
+   */
+  const slideTo = useCallback(
+    (x: number) => {
+      const track = trackRef.current
+      if (!track) return
+      stop()
+      const max = track.scrollWidth - track.clientWidth
+      const target = Math.max(0, Math.min(x, max))
+      const from = track.scrollLeft
+      if (prefersReducedMotion() || Math.abs(target - from) < 1) {
+        track.scrollLeft = target
+        return
+      }
+      track.classList.add('is-moving')
+      cancelRef.current = animateValue(from, target, {
+        duration: Math.min(900, 480 + Math.abs(target - from) * 0.3),
+        ease: easeInOutCubic,
+        onUpdate: (value) => {
+          track.scrollLeft = value
+        },
+        onDone: () => {
+          cancelRef.current = null
+          track.classList.remove('is-moving')
+        },
+      })
+    },
+    [stop],
+  )
 
   const goTo = useCallback(
     (target: number) => {
-      trackRef.current?.scrollTo({ left: target * stepSize(), behavior: 'smooth' })
+      slideTo(target * stepSize())
     },
-    [stepSize],
+    [slideTo, stepSize],
   )
 
   const next = useCallback(() => {
@@ -77,6 +120,65 @@ export function FeaturedCarousel() {
     return () => clearInterval(id)
   }, [paused, next])
 
+  // Arrastar com o mouse. No toque o próprio navegador já cuida, com inércia nativa.
+  const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== 'mouse' || event.button !== 0) return
+    const track = trackRef.current
+    if (!track) return
+    stop()
+    drag.current = {
+      active: true,
+      moved: false,
+      startX: event.clientX,
+      startLeft: track.scrollLeft,
+      lastX: event.clientX,
+      lastT: performance.now(),
+      velocity: 0,
+    }
+  }
+
+  const onPointerMove = (event: PointerEvent<HTMLDivElement>) => {
+    const d = drag.current
+    const track = trackRef.current
+    if (!d.active || !track) return
+    const dx = event.clientX - d.startX
+    if (!d.moved && Math.abs(dx) > 6) {
+      d.moved = true
+      track.setPointerCapture(event.pointerId)
+      track.classList.add('is-dragging')
+    }
+    if (!d.moved) return
+    const now = performance.now()
+    const dt = now - d.lastT
+    if (dt > 0) d.velocity = d.velocity * 0.6 + (((d.lastX - event.clientX) / dt) * 0.4)
+    d.lastX = event.clientX
+    d.lastT = now
+    track.scrollLeft = d.startLeft - dx
+  }
+
+  const endDrag = () => {
+    const d = drag.current
+    const track = trackRef.current
+    if (!d.active || !track) return
+    d.active = false
+    if (!d.moved) return
+    const size = stepSize()
+    // Um arrasto rápido "joga" o carrossel um pouco além; depois ele encaixa no card mais próximo.
+    const flick = Math.max(-1.6, Math.min(1.6, d.velocity))
+    const projected = track.scrollLeft + flick * 220
+    slideTo(Math.round(projected / size) * size)
+    track.classList.remove('is-dragging')
+  }
+
+  /** Depois de arrastar, o clique que o navegador dispara não deve abrir/adicionar nada. */
+  const onClickCapture = (event: ReactMouseEvent<HTMLDivElement>) => {
+    if (drag.current.moved) {
+      event.preventDefault()
+      event.stopPropagation()
+      drag.current.moved = false
+    }
+  }
+
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key === 'ArrowRight') {
       event.preventDefault()
@@ -99,7 +201,7 @@ export function FeaturedCarousel() {
       onTouchStart={() => setPaused(true)}
     >
       <div className="container">
-        <div className="section__head section__head--row">
+        <div className="section__head section__head--row" data-reveal>
           <div>
             <h2 id="destaques-title">Destaques</h2>
             <p>Os sabores e combos que mais saem do forno neste período.</p>
@@ -141,9 +243,17 @@ export function FeaturedCarousel() {
           aria-label={`Destaques ${period === 'semana' ? 'da semana' : 'do mês'}`}
           onScroll={measure}
           onKeyDown={onKeyDown}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onClickCapture={onClickCapture}
+          onDragStart={(event) => event.preventDefault()}
+          onWheel={stop}
+          onTouchStart={stop}
         >
           {items.map((product) => (
-            <div className="carousel__slide" key={product.id}>
+            <div className="carousel__slide" key={product.id} data-reveal>
               <ProductCard product={product} ribbon={ribbon} featured />
             </div>
           ))}

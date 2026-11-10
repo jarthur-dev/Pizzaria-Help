@@ -10,7 +10,7 @@ export function Footer() {
 
   return (
     <footer className="footer" id="contato">
-      <div className="container footer__grid">
+      <div className="container footer__grid" data-reveal>
         <div className="footer__brand">
           <span className="brand brand--light">
             <span className="brand__mark" aria-hidden="true">

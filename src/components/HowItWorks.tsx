@@ -26,14 +26,14 @@ export function HowItWorks() {
   return (
     <section className="section section--tint" id="como-pedir" aria-labelledby="como-pedir-title">
       <div className="container">
-        <div className="section__head">
+        <div className="section__head" data-reveal>
           <h2 id="como-pedir-title">Como pedir</h2>
           <p>Quatro passos, e o primeiro já pode ser feito agora.</p>
         </div>
 
         <ol className="steps">
           {STEPS.map((step, index) => (
-            <li key={step.title} className="step">
+            <li key={step.title} className="step" data-reveal>
               <span className="step__number" aria-hidden="true">
                 {index + 1}
               </span>
@@ -43,7 +43,7 @@ export function HowItWorks() {
           ))}
         </ol>
 
-        <div className="band">
+        <div className="band" data-reveal>
           <div>
             <h3>Com fome? A Help anota o seu pedido agora.</h3>
             <p>Leva cerca de um minuto, do primeiro oi ao pedido enviado.</p>
