@@ -2104,17 +2104,37 @@ a.chip--primary:hover {
   animation: pop 0.5s var(--ease);
 }
 
+/* "Reduzir movimento": mantém deslizes e fades curtos e remove o que é mais intenso. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.reveal-gentle [data-reveal] {
+  transform: none;
+  transition-duration: 0.5s;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
+  .hero__copy > *,
+  .hero__demo,
+  .chat__list .msg,
+  .demo .msg,
+  .chat__list .chips .chip {
+    animation-name: fade-in;
   }
 
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    transition-delay: 0s !important;
+  .hero__pizza svg,
+  .badge {
+    animation: none;
+  }
+
+  .card:hover .art svg,
+  .btn:hover {
+    transform: none;
   }
 }

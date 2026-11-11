@@ -1,6 +1,6 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { RefObject } from 'react'
-import { EASE_OUT, prefersReducedMotion } from '../utils/motion'
+import { EASE_OUT, gentle, prefersReducedMotion } from '../utils/motion'
 
 interface Box {
   x: number
@@ -34,7 +34,8 @@ export function useFlip(container: RefObject<HTMLElement | null>, key: string) {
     const resized = width.current !== 0 && width.current !== window.innerWidth
     width.current = window.innerWidth
 
-    if (!first && !resized && !prefersReducedMotion()) {
+    if (!first && !resized) {
+      const calm = prefersReducedMotion()
       let entering = 0
       children.forEach((child) => {
         const id = child.dataset.flipId
@@ -46,17 +47,17 @@ export function useFlip(container: RefObject<HTMLElement | null>, key: string) {
           const dy = before.y - after.y
           if (dx || dy) {
             child.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }], {
-              duration: 520,
+              duration: gentle(520),
               easing: EASE_OUT,
             })
           }
         } else {
           child.animate(
             [
-              { opacity: 0, transform: 'translateY(18px) scale(0.97)' },
+              { opacity: 0, transform: calm ? 'none' : 'translateY(18px) scale(0.97)' },
               { opacity: 1, transform: 'none' },
             ],
-            { duration: 520, delay: Math.min(entering++, 8) * 40, easing: EASE_OUT, fill: 'backwards' },
+            { duration: gentle(520), delay: Math.min(entering++, 8) * 40, easing: EASE_OUT, fill: 'backwards' },
           )
         }
       })

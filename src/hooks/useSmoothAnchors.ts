@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { animateValue, easeInOutCubic, prefersReducedMotion } from '../utils/motion'
+import { animateValue, easeInOutCubic, gentle } from '../utils/motion'
 
 /** Links como "#cardapio" deslizam até a seção com a mesma curva de movimento do resto da página. */
 export function useSmoothAnchors() {
@@ -33,7 +33,7 @@ export function useSmoothAnchors() {
       history.pushState(null, '', hash)
       if (!target.hasAttribute('tabindex')) target.setAttribute('tabindex', '-1')
 
-      if (prefersReducedMotion() || Math.abs(to - from) < 2) {
+      if (Math.abs(to - from) < 2) {
         window.scrollTo(0, to)
         target.focus({ preventScroll: true })
         return
@@ -42,7 +42,7 @@ export function useSmoothAnchors() {
       // O `scroll-behavior: smooth` do CSS atrapalharia a animação quadro a quadro.
       html.style.scrollBehavior = 'auto'
       cancel = animateValue(from, to, {
-        duration: Math.min(1100, 450 + Math.abs(to - from) * 0.25),
+        duration: gentle(Math.min(1100, 450 + Math.abs(to - from) * 0.25)),
         ease: easeInOutCubic,
         onUpdate: (value) => window.scrollTo(0, value),
         onDone: () => {

@@ -6,6 +6,12 @@ export function prefersReducedMotion(): boolean {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
+/**
+ * Com "reduzir movimento" ligado (no Windows: Configurações > Acessibilidade > Efeitos visuais),
+ * a página não desliga tudo: mantém só movimentos curtos e suaves, sem giros, zoom ou pulos.
+ */
+export const gentle = (ms: number): number => (prefersReducedMotion() ? Math.min(ms, 380) : ms)
+
 export const easeInOutCubic = (t: number): number => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 
 interface AnimateOptions {

@@ -4,14 +4,16 @@ import { prefersReducedMotion } from '../utils/motion'
 /**
  * Faz os elementos com `data-reveal` surgirem suavemente quando entram na tela.
  * Elementos que aparecem depois (ex.: troca de aba no carrossel) são observados automaticamente.
- * Sem JavaScript ou com "reduzir movimento", tudo fica visível desde o início.
+ * Sem JavaScript, tudo fica visível desde o início. Com "reduzir movimento", o efeito vira só um fade.
  */
 export function useScrollReveal() {
   useEffect(() => {
-    if (prefersReducedMotion() || !('IntersectionObserver' in window)) return
+    if (!('IntersectionObserver' in window)) return
 
     const root = document.documentElement
     root.classList.add('reveal-ready')
+    // Em "reduzir movimento" os blocos só aparecem com fade, sem deslocamento.
+    root.classList.toggle('reveal-gentle', prefersReducedMotion())
 
     const finish = (el: HTMLElement) => {
       el.removeAttribute('data-reveal')
@@ -62,7 +64,7 @@ export function useScrollReveal() {
     return () => {
       io.disconnect()
       mutations.disconnect()
-      root.classList.remove('reveal-ready')
+      root.classList.remove('reveal-ready', 'reveal-gentle')
     }
   }, [])
 }

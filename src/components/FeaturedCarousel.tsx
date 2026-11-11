@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, MouseEvent as ReactMouseEvent, PointerEvent } from 'react'
 import { PRODUCTS } from '../data/products'
-import { animateValue, easeInOutCubic, prefersReducedMotion } from '../utils/motion'
+import { animateValue, easeInOutCubic, gentle } from '../utils/motion'
 import { Icon } from './Icon'
 import { ProductCard } from './ProductCard'
 
@@ -69,13 +69,13 @@ export function FeaturedCarousel() {
       const max = track.scrollWidth - track.clientWidth
       const target = Math.max(0, Math.min(x, max))
       const from = track.scrollLeft
-      if (prefersReducedMotion() || Math.abs(target - from) < 1) {
+      if (Math.abs(target - from) < 1) {
         track.scrollLeft = target
         return
       }
       track.classList.add('is-moving')
       cancelRef.current = animateValue(from, target, {
-        duration: Math.min(900, 480 + Math.abs(target - from) * 0.3),
+        duration: gentle(Math.min(900, 480 + Math.abs(target - from) * 0.3)),
         ease: easeInOutCubic,
         onUpdate: (value) => {
           track.scrollLeft = value

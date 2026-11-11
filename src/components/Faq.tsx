@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import type { MouseEvent } from 'react'
 import { BUSINESS } from '../config'
 import { formatPrice } from '../utils/format'
-import { EASE_OUT, prefersReducedMotion } from '../utils/motion'
+import { EASE_OUT, gentle } from '../utils/motion'
 import { Icon } from './Icon'
 
 const FAQS = [
@@ -45,11 +45,6 @@ function FaqItem({ q, a }: { q: string; a: string }) {
     const opening = !el.open
     el.dataset.expanded = String(opening)
 
-    if (prefersReducedMotion()) {
-      el.open = opening
-      return
-    }
-
     animation.current?.cancel()
     const startHeight = el.offsetHeight
     el.style.overflow = 'hidden'
@@ -58,7 +53,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
     const endHeight = opening ? el.offsetHeight : summary.offsetHeight + (el.offsetHeight - el.clientHeight)
 
     const run = el.animate([{ height: `${startHeight}px` }, { height: `${endHeight}px` }], {
-      duration: 420,
+      duration: gentle(420),
       easing: EASE_OUT,
     })
     animation.current = run
